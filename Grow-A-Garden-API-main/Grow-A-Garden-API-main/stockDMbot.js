@@ -86,7 +86,7 @@ function getItemEmoji(itemName) {
 
 async function checkWeatherEvents() {
   try {
-    const weatherRes = await fetch('https://api.joshlee.com/weather');
+    const weatherRes = await fetch('https://api.joshlei.com/v2/growagarden/weather');
     const weatherData = await weatherRes.json();
     console.log('Weather API Response:', JSON.stringify(weatherData, null, 2));
     const activeEvents = (weatherData.weather || []).filter(ev => ev.active);
@@ -194,7 +194,7 @@ async function checkStockAndDM() {
 client.once('ready', () => {
   console.log(`Discord bot ready as ${client.user.tag}`);
   setInterval(checkStockAndDM, 60000); // check stock every 60s
-  setInterval(checkWeatherEvents, 30000); // check weather events every 30s for faster detection
+  setInterval(checkWeatherEvents, 3000); // check weather events every 30s for faster detection
 });
 
 client.login(BOT_TOKEN);
