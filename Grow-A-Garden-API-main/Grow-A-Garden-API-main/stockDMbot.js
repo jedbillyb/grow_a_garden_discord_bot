@@ -1,8 +1,13 @@
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const fetch = (...args) => import('node-fetch').then(mod => mod.default(...args));
 const BOT_TOKEN = 'MTM5OTE2NDg3Mjc0MjE0MTk3Mg.Gh4K7-.iqQMmcqgDOToVJc_2XHtdhnRxjYpESy-Qqvnq0'; // Replace with your bot token
-const USER_ID = '1162693800590848030';     // Replace with your Discord user ID
-
+const USER_IDS = [
+  '1162693800590848030', // You
+  '123456789012345678',
+  '1358644289198100611',   // Friend 1
+  '1283307434579988596'    // Friend 2
+  // Add more here
+];
 const client = new Client({ intents: [GatewayIntentBits.DirectMessages, GatewayIntentBits.Guilds] });
 
 let lastActiveEvents = new Set(); // Track previous active events
@@ -18,6 +23,18 @@ const targetSeeds = ['Giant Pinecone', 'Elder Strawberry', 'Burning Bud', 'Sugar
 const targetGear = ['Master Sprinkler', 'Godly Sprinkler'];
 const targetEggs = ['Bug Egg', 'Paradise Egg', 'Mythical Egg', 'Rare Summer Egg'];
 const targetEvents = ['Raiju', 'Koi', 'Zen Egg', 'Pet Shard Tranquill', 'Pet Shard Corrupted'];
+
+async function sendToUsers(embed) {
+  for (const id of USER_IDS) {
+    try {
+      const user = await client.users.fetch(id);
+      await user.send({ embeds: [embed] });
+      console.log(`✅ Sent DM to ${user.username}`);
+    } catch (e) {
+      console.log(`❌ Could not DM ${id}: ${e.message}`);
+    }
+  }
+}
 
 const prismaticColors = {
   'Prismatic Apple': 0xFF69B4,
@@ -212,7 +229,7 @@ async function checkStockAndDM() {
     const newGears = hasStockChanged(currentGears, lastStockState.gears, 'gears');
     if (newGears.length > 0) {
       const embed = formatStockEmbed('🔧 Stock Alert - Target Gears', newGears, Date.now());
-      await user.send({ embeds: [embed] });
+      await sendToUsers(embed);
     }
 
     // Seeds - Only send when stock actually changes
@@ -222,7 +239,7 @@ async function checkStockAndDM() {
     const newSeeds = hasStockChanged(currentSeeds, lastStockState.seeds, 'seeds');
     if (newSeeds.length > 0) {
       const embed = formatStockEmbed('🌱 Stock Alert - Target Seeds', newSeeds, Date.now());
-      await user.send({ embeds: [embed] });
+      await sendToUsers(embed);
     }
 
     // Eggs - Only send when stock actually changes
@@ -232,7 +249,7 @@ async function checkStockAndDM() {
     const newEggs = hasStockChanged(currentEggs, lastStockState.eggs, 'eggs');
     if (newEggs.length > 0) {
       const embed = formatStockEmbed('🥚 Stock Alert - Target Eggs', newEggs, Date.now());
-      await user.send({ embeds: [embed] });
+      await sendToUsers(embed);
     }
 
     // Events - Only send when stock actually changes
@@ -242,7 +259,7 @@ async function checkStockAndDM() {
     const newEvents = hasStockChanged(currentEvents, lastStockState.events, 'events');
     if (newEvents.length > 0) {
       const embed = formatStockEmbed('🎉 Stock Alert - Target Events', newEvents, Date.now());
-      await user.send({ embeds: [embed] });
+      await sendToUsers(embed);
     }
   } catch (err) {
     console.error('Error checking stock for DM:', err);
