@@ -6,6 +6,12 @@ const USER_ID = '1162693800590848030';     // Replace with your Discord user ID
 const client = new Client({ intents: [GatewayIntentBits.DirectMessages, GatewayIntentBits.Guilds] });
 
 let lastActiveEvents = new Set(); // Track previous active events
+let lastStockState = {
+  gears: new Map(),
+  seeds: new Map(), 
+  eggs: new Map(),
+  events: new Map()
+}; // Track previous stock states
 
 // Filter arrays for specific items you want to be pinged for
 const targetSeeds = ['Giant Pinecone', 'Elder Strawberry', 'Burning Bud', 'Sugar Apple', 'Ember Lily', 'Beanstalk'];
@@ -172,45 +178,70 @@ async function checkWeatherEvents() {
   }
 }
 
+function hasStockChanged(currentItems, lastStockMap, stockType) {
+  const newItems = [];
+  
+  for (const item of currentItems) {
+    const lastQuantity = lastStockMap.get(item.name) || 0;
+    if (item.value > lastQuantity) {
+      newItems.push(item);
+    }
+    lastStockMap.set(item.name, item.value);
+  }
+  
+  // Remove items that are no longer in stock
+  for (const [itemName, quantity] of lastStockMap.entries()) {
+    if (!currentItems.find(item => item.name === itemName)) {
+      lastStockMap.set(itemName, 0);
+    }
+  }
+  
+  return newItems;
+}
+
 async function checkStockAndDM() {
   try {
     const res = await fetch('http://localhost:3000/api/stock/GetStock');
     const data = await res.json();
     const user = await client.users.fetch(USER_ID);
 
-    // Gears - Only target items, send immediately when detected
-    const gears = (data.gearStock || []).filter(item => 
+    // Gears - Only send when stock actually changes
+    const currentGears = (data.gearStock || []).filter(item => 
       item.value > 0 && targetGear.includes(item.name)
     );
-    if (gears.length > 0) {
-      const embed = formatStockEmbed('🔧 Stock Alert - Target Gears', gears, Date.now());
+    const newGears = hasStockChanged(currentGears, lastStockState.gears, 'gears');
+    if (newGears.length > 0) {
+      const embed = formatStockEmbed('🔧 Stock Alert - Target Gears', newGears, Date.now());
       await user.send({ embeds: [embed] });
     }
 
-    // Seeds - Only target items, send immediately when detected
-    const seeds = (data.seedsStock || []).filter(item => 
+    // Seeds - Only send when stock actually changes
+    const currentSeeds = (data.seedsStock || []).filter(item => 
       item.value > 0 && targetSeeds.includes(item.name)
     );
-    if (seeds.length > 0) {
-      const embed = formatStockEmbed('🌱 Stock Alert - Target Seeds', seeds, Date.now());
+    const newSeeds = hasStockChanged(currentSeeds, lastStockState.seeds, 'seeds');
+    if (newSeeds.length > 0) {
+      const embed = formatStockEmbed('🌱 Stock Alert - Target Seeds', newSeeds, Date.now());
       await user.send({ embeds: [embed] });
     }
 
-    // Eggs - Only target items, send immediately when detected
-    const eggs = (data.eggStock || []).filter(item => 
+    // Eggs - Only send when stock actually changes
+    const currentEggs = (data.eggStock || []).filter(item => 
       item.value > 0 && targetEggs.includes(item.name)
     );
-    if (eggs.length > 0) {
-      const embed = formatStockEmbed('🥚 Stock Alert - Target Eggs', eggs, Date.now());
+    const newEggs = hasStockChanged(currentEggs, lastStockState.eggs, 'eggs');
+    if (newEggs.length > 0) {
+      const embed = formatStockEmbed('🥚 Stock Alert - Target Eggs', newEggs, Date.now());
       await user.send({ embeds: [embed] });
     }
 
-    // Events - Only target items, send immediately when detected
-    const events = (data.eventStock || []).filter(item => 
+    // Events - Only send when stock actually changes
+    const currentEvents = (data.eventStock || []).filter(item => 
       item.value > 0 && targetEvents.includes(item.name)
     );
-    if (events.length > 0) {
-      const embed = formatStockEmbed('🎉 Stock Alert - Target Events', events, Date.now());
+    const newEvents = hasStockChanged(currentEvents, lastStockState.events, 'events');
+    if (newEvents.length > 0) {
+      const embed = formatStockEmbed('🎉 Stock Alert - Target Events', newEvents, Date.now());
       await user.send({ embeds: [embed] });
     }
   } catch (err) {
