@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>GAG Stock Viewer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: transparent;
+      color: #ffffff;
+      font-family: 'Arial', sans-serif;
+      font-weight: bold;
+      min-height: 100vh;
+      padding: 8px;
+      overflow: hidden;
+    }
+    
+    .overlay-container {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      width: 320px;
+      max-height: 95vh;
+      overflow-y: auto;
+      z-index: 9999;
+    }
+    
+    .header {
+      background: linear-gradient(45deg, #8B4513, #A0522D);
+      border: 2px solid #D2691E;
+      border-radius: 8px 8px 0 0;
+      padding: 8px 12px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: bold;
+      color: #FFE4B5;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+    
+    .stock-panel {
+      background: linear-gradient(145deg, #654321, #8B4513);
+      border: 2px solid #D2691E;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .category {
+      border-bottom: 1px solid rgba(210, 105, 30, 0.3);
+    }
+    
+    .category:last-child {
+      border-bottom: none;
+      border-radius: 0 0 6px 6px;
+    }
+    
+    .category-header {
+      background: linear-gradient(90deg, #A0522D, #8B4513);
+      border-bottom: 1px solid #D2691E;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #FFE4B5;
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .item {
+      background: linear-gradient(90deg, rgba(139, 69, 19, 0.9), rgba(160, 82, 45, 0.9));
+      border-bottom: 1px solid rgba(210, 105, 30, 0.2);
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+    
+    .item:hover {
+      background: linear-gradient(90deg, rgba(160, 82, 45, 0.9), rgba(139, 69, 19, 0.9));
+    }
+    
+    .item:last-child {
+      border-bottom: none;
+    }
+    
+    .item-name {
+      color: #F5DEB3;
+      font-weight: bold;
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+      flex: 1;
+      margin-right: 8px;
+    }
+    
+    .item-stock {
+      color: #32CD32;
+      font-weight: bold;
+      font-family: 'Courier New', monospace;
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(50, 205, 50, 0.3);
+      min-width: 60px;
+      text-align: center;
+    }
+    
+    .item-value {
+      color: #FFD700;
+      font-weight: bold;
+      font-family: 'Courier New', monospace;
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      margin-left: 4px;
+    }
+    
+    .loading, .error {
+      background: linear-gradient(145deg, #654321, #8B4513);
+      border: 2px solid #D2691E;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      color: #FFE4B5;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    }
+    
+    .error {
+      color: #FF6B6B;
+      border-color: #FF6B6B;
+    }
+    
+    /* Custom scrollbar */
+    .stock-panel::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .stock-panel::-webkit-scrollbar-track {
+      background: rgba(139, 69, 19, 0.3);
+      border-radius: 4px;
+    }
+    
+    .stock-panel::-webkit-scrollbar-thumb {
+      background: #D2691E;
+      border-radius: 4px;
+    }
+    
+    .stock-panel::-webkit-scrollbar-thumb:hover {
+      background: #CD853F;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay-container">
+    <div class="header">🌱 GAG Stock Tracker</div>
+    <div id="stock" class="loading">Loading...</div>
+  </div>
+
+  <script>
+    async function loadStock() {
+      try {
+        const res = await fetch('/api/stock/GetStock');
+        const data = await res.json();
+        const container = document.getElementById('stock');
+        container.innerHTML = '';
+        container.className = 'stock-panel';
+
+        Object.entries(data).forEach(([category, items]) => {
+          if (!Array.isArray(items) || items.length === 0) return;
+          
+          const categoryDiv = document.createElement('div');
+          categoryDiv.className = 'category';
+          
+          const header = document.createElement('div');
+          header.className = 'category-header';
+          header.textContent = category.replace('Stock', '');
+          categoryDiv.appendChild(header);
+
+          items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'item';
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'item-name';
+            nameSpan.textContent = item.name;
+            
+            const valueContainer = document.createElement('div');
+            valueContainer.style.display = 'flex';
+            valueContainer.style.alignItems = 'center';
+            
+            if (item.value !== null && item.value !== undefined) {
+              const stockSpan = document.createElement('span');
+              stockSpan.className = 'item-stock';
+              stockSpan.textContent = `x${item.value}`;
+              valueContainer.appendChild(stockSpan);
+            }
+            
+            div.appendChild(nameSpan);
+            div.appendChild(valueContainer);
+            categoryDiv.appendChild(div);
+          });
+          
+          container.appendChild(categoryDiv);
+        });
+      } catch (err) {
+        const container = document.getElementById('stock');
+        container.className = 'error';
+        container.textContent = 'Error loading stock data';
+        console.error(err);
+      }
+    }
+
+    loadStock();
+    setInterval(loadStock, 15000); // refresh every 15s
+  </script>
+</body>
+</html>
