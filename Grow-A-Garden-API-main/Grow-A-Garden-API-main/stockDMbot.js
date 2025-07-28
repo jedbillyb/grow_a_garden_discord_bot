@@ -7,6 +7,12 @@ const client = new Client({ intents: [GatewayIntentBits.DirectMessages, GatewayI
 
 let lastActiveEvents = new Set(); // Track previous active events
 
+// Filter arrays for specific items you want to be pinged for
+const targetSeeds = ['Giant Pinecone', 'Elder Strawberry', 'Burning Bud', 'Sugar Apple', 'Ember Lily', 'Beanstalk'];
+const targetGear = ['Master Sprinkler', 'Godly Sprinkler'];
+const targetEggs = ['Bug Egg', 'Paradise Egg', 'Mythical Egg', 'Rare Summer Egg'];
+const targetEvents = ['Raiju', 'Koi', 'Zen Egg', 'Pet Shard Tranquill', 'Pet Shard Corrupted'];
+
 const prismaticColors = {
   'Prismatic Apple': 0xFF69B4,
   'Prismatic Carrot': 0xFF4500, 
@@ -50,7 +56,32 @@ function formatStockEmbed(title, items, stockId) {
 
 function getItemEmoji(itemName) {
   const emojiMap = {
-    // Gears
+    // Target Gears
+    'Master Sprinkler': '💧👑',
+    'Godly Sprinkler': '💧✨',
+    
+    // Target Seeds
+    'Giant Pinecone': '🌲🔮',
+    'Elder Strawberry': '🍓👴',
+    'Burning Bud': '🔥🌸',
+    'Sugar Apple': '🍎🍯',
+    'Ember Lily': '🔥🌺',
+    'Beanstalk': '🌱📏',
+    
+    // Target Eggs
+    'Bug Egg': '🐛🥚',
+    'Paradise Egg': '🏝️🥚',
+    'Mythical Egg': '✨🥚',
+    'Rare Summer Egg': '☀️🥚',
+    
+    // Target Events
+    'Raiju': '⚡🐺',
+    'Koi': '🐟🌸',
+    'Zen Egg': '🧘🥚',
+    'Pet Shard Tranquill': '💎😌',
+    'Pet Shard Corrupted': '💎😈',
+    
+    // Generic fallbacks
     'Trowel': '🔨',
     'Harvest Tool': '🧰', 
     'Favorite Tool': '💖',
@@ -153,17 +184,21 @@ async function checkStockAndDM() {
     if (minute % 5 === 0) {
       const user = await client.users.fetch(USER_ID);
 
-      // Gears
-      const gears = (data.gearStock || []).filter(item => item.value > 0);
+      // Gears - Only target items
+      const gears = (data.gearStock || []).filter(item => 
+        item.value > 0 && targetGear.includes(item.name)
+      );
       if (gears.length > 0) {
-        const embed = formatStockEmbed('🔧 Stock Updates - Gears', gears, Date.now());
+        const embed = formatStockEmbed('🔧 Stock Updates - Target Gears', gears, Date.now());
         await user.send({ embeds: [embed] });
       }
 
-      // Seeds
-      const seeds = (data.seedsStock || []).filter(item => item.value > 0);
+      // Seeds - Only target items
+      const seeds = (data.seedsStock || []).filter(item => 
+        item.value > 0 && targetSeeds.includes(item.name)
+      );
       if (seeds.length > 0) {
-        const embed = formatStockEmbed('🌱 Stock Updates - Seeds', seeds, Date.now());
+        const embed = formatStockEmbed('🌱 Stock Updates - Target Seeds', seeds, Date.now());
         await user.send({ embeds: [embed] });
       }
     }
@@ -172,17 +207,21 @@ async function checkStockAndDM() {
     if (minute === 0) {
       const user = await client.users.fetch(USER_ID);
 
-      // Eggs
-      const eggs = (data.eggStock || []).filter(item => item.value > 0);
+      // Eggs - Only target items
+      const eggs = (data.eggStock || []).filter(item => 
+        item.value > 0 && targetEggs.includes(item.name)
+      );
       if (eggs.length > 0) {
-        const embed = formatStockEmbed('🥚 Stock Updates - Eggs', eggs, Date.now());
+        const embed = formatStockEmbed('🥚 Stock Updates - Target Eggs', eggs, Date.now());
         await user.send({ embeds: [embed] });
       }
 
-      // Events
-      const events = (data.eventStock || []).filter(item => item.value > 0);
+      // Events - Only target items
+      const events = (data.eventStock || []).filter(item => 
+        item.value > 0 && targetEvents.includes(item.name)
+      );
       if (events.length > 0) {
-        const embed = formatStockEmbed('🎉 Stock Updates - Events', events, Date.now());
+        const embed = formatStockEmbed('🎉 Stock Updates - Target Events', events, Date.now());
         await user.send({ embeds: [embed] });
       }
     }
@@ -194,7 +233,7 @@ async function checkStockAndDM() {
 client.once('ready', () => {
   console.log(`Discord bot ready as ${client.user.tag}`);
   setInterval(checkStockAndDM, 60000); // check stock every 60s
-  setInterval(checkWeatherEvents, 3000); // check weather events every 30s for faster detection
+  setInterval(checkWeatherEvents, 3000); // check weather events every 3s for faster detection
 });
 
 client.login(BOT_TOKEN);
