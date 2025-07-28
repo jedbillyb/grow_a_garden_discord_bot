@@ -3,7 +3,7 @@ const fetch = (...args) => import('node-fetch').then(mod => mod.default(...args)
 const BOT_TOKEN = 'MTM5OTE2NDg3Mjc0MjE0MTk3Mg.Gh4K7-.iqQMmcqgDOToVJc_2XHtdhnRxjYpESy-Qqvnq0'; // Replace with your bot token
 const USER_IDS = [
   '1162693800590848030', // You
-  '123456789012345678',
+  '1085337880022483014',
   '1358644289198100611',   // Friend 1
   '1283307434579988596'    // Friend 2
   // Add more here
@@ -138,62 +138,7 @@ function getItemEmoji(itemName) {
   return emojiMap[itemName] || '📦';
 }
 
-async function checkWeatherEvents() {
-  try {
-    const weatherRes = await fetch('https://api.joshlei.com/v2/growagarden/weather');
-    const weatherData = await weatherRes.json();
-    console.log('Weather API Response:', JSON.stringify(weatherData, null, 2));
-    const activeEvents = (weatherData.weather || []).filter(ev => ev.active);
-    
-    // Create set of current active event names
-    const currentActiveEvents = new Set(activeEvents.map(ev => ev.weather_id));
-    
-    // Check if events have changed
-    const eventsChanged = 
-      currentActiveEvents.size !== lastActiveEvents.size ||
-      [...currentActiveEvents].some(event => !lastActiveEvents.has(event));
-    
-    if (eventsChanged) {
-      const user = await client.users.fetch(USER_ID);
-      
-      if (activeEvents.length > 0) {
-        const emojiMap = {
-          rain: '🌧️', thunderstorm: '⛈️', bloodnight: '🌑', meteorshower: '☄️',
-          disco: '🪩', jandelstorm: '🌪️', night: '🌙', volcano: '🌋',
-          chocolaterain: '🍫🌧️', blackhole: '🕳️', frost: '❄️', bloodmoonevent: '🩸🌕',
-          gale: '💨', megaharvest: '🌾', sungod: '☀️', nightevent: '🌚',
-          tropicalrain: '🌴🌧️', auroraborealis: '🌌', windy: '💨', tornado: '🌪️',
-          summerharvest: '🌻', heatwave: '🔥'
-        };
-        
-        const weatherEmbed = new EmbedBuilder()
-          .setTitle('🌤️ Weather Event Update!')
-          .setColor(0xFFD700)
-          .setDescription(activeEvents.map(ev =>
-            `${emojiMap[ev.weather_id] || '🌟'} **${ev.weather_id}** - Active now!`
-          ).join('\n'))
-          .setTimestamp()
-          .setFooter({ text: 'Grow A Garden Weather Alert' });
-          
-        await user.send({ embeds: [weatherEmbed] });
-      } else {
-        const weatherEmbed = new EmbedBuilder()
-          .setTitle('🌤️ Weather Clear')
-          .setColor(0x87CEEB)
-          .setDescription('No weather events currently active.')
-          .setTimestamp()
-          .setFooter({ text: 'Grow A Garden Weather Alert' });
-          
-        await user.send({ embeds: [weatherEmbed] });
-      }
-      
-      // Update last active events
-      lastActiveEvents = currentActiveEvents;
-    }
-  } catch (err) {
-    console.error('Error checking weather events:', err);
-  }
-}
+ 
 
 function hasStockChanged(currentItems, lastStockMap, stockType) {
   const newItems = [];
@@ -220,7 +165,7 @@ async function checkStockAndDM() {
   try {
     const res = await fetch('http://localhost:3000/api/stock/GetStock');
     const data = await res.json();
-    const user = await client.users.fetch(USER_ID);
+   
 
     // Gears - Only send when stock actually changes
     const currentGears = (data.gearStock || []).filter(item => 
