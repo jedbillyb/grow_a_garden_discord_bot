@@ -5,26 +5,102 @@ const USER_ID = '1162693800590848030';     // Replace with your Discord user ID
 
 const client = new Client({ intents: [GatewayIntentBits.DirectMessages, GatewayIntentBits.Guilds] });
 
+let lastActiveEvents = new Set(); // Track previous active events
+
+const prismaticColors = {
+  'Prismatic Apple': 0xFF69B4,
+  'Prismatic Carrot': 0xFF4500, 
+  'Prismatic Tomato': 0xFF0000,
+  'Prismatic Blueberry': 0x0000FF,
+  'Prismatic Strawberry': 0xFF1493,
+  'Prismatic Bamboo': 0x228B22
+};
+
 function formatStockEmbed(title, items, stockId) {
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setTitle(title)
-    .setDescription(items.map(item =>
-      `${item.emoji || ''} **${item.name}** (${item.value} in stock)`
-    ).join('\n'))
-    .setFooter({ text: `Stock ID: ${stockId} • Today at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` });
+    .setColor(0x5865F2)
+    .setTimestamp()
+    .setFooter({ 
+      text: `Stock ID: ${stockId} • Today at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` 
+    });
+
+  if (items.length === 0) {
+    embed.setDescription('No items in stock');
+    return embed;
+  }
+
+  // Check if this is a prismatic item category and set special color
+  const firstItem = items[0];
+  if (firstItem && firstItem.name && firstItem.name.includes('Prismatic')) {
+    const prismaticColor = prismaticColors[firstItem.name];
+    if (prismaticColor) {
+      embed.setColor(prismaticColor);
+    }
+  }
+
+  const description = items.map(item => {
+    const emoji = getItemEmoji(item.name) || '📦';
+    return `${emoji} **${item.name}** (${item.value} in stock)`;
+  }).join('\n');
+
+  embed.setDescription(description);
+  return embed;
 }
 
-async function checkStockAndDM() {
-  try {
-    const res = await fetch('http://localhost:3000/api/stock/GetStock');
-    const data = await res.json();
+function getItemEmoji(itemName) {
+  const emojiMap = {
+    // Gears
+    'Trowel': '🔨',
+    'Harvest Tool': '🧰', 
+    'Favorite Tool': '💖',
+    'Magnifying Glass': '🔍',
+    'Recall Wrench': '🔧',
+    'Watering Can': '💧',
+    'Cleaning Spray': '🧴',
+    
+    // Seeds
+    'Apple': '🍎',
+    'Carrot': '🥕',
+    'Tomato': '🍅',
+    'Blueberry': '🫐',
+    'Strawberry': '🍓',
+    'Bamboo': '🎋',
+    
+    // Prismatic versions
+    'Prismatic Apple': '✨🍎',
+    'Prismatic Carrot': '✨🥕',
+    'Prismatic Tomato': '✨🍅',
+    'Prismatic Blueberry': '✨🫐',
+    'Prismatic Strawberry': '✨🍓',
+    'Prismatic Bamboo': '✨🎋',
+    
+    // Eggs
+    'Chicken Egg': '🥚',
+    'Duck Egg': '🦆',
+    'Goose Egg': '🪿'
+  };
+  
+  return emojiMap[itemName] || '📦';
+}
 
-    // Fetch weather first
-    let weatherText = '';
-    try {
-      const weatherRes = await fetch('http://localhost:3000/api/GetWeather');
-      const weatherData = await weatherRes.json();
-      const activeEvents = (weatherData.events || []).filter(ev => ev.isActive);
+async function checkWeatherEvents() {
+  try {
+    const weatherRes = await fetch('http://localhost:3000/api/GetWeather');
+    const weatherData = await weatherRes.json();
+    const activeEvents = (weatherData.events || []).filter(ev => ev.isActive);
+    
+    // Create set of current active event names
+    const currentActiveEvents = new Set(activeEvents.map(ev => ev.name));
+    
+    // Check if events have changed
+    const eventsChanged = 
+      currentActiveEvents.size !== lastActiveEvents.size ||
+      [...currentActiveEvents].some(event => !lastActiveEvents.has(event));
+    
+    if (eventsChanged) {
+      const user = await client.users.fetch(USER_ID);
+      
       if (activeEvents.length > 0) {
         const emojiMap = {
           rain: '🌧️', thunderstorm: '⛈️', bloodnight: '🌑', meteorshower: '☄️',
@@ -34,15 +110,40 @@ async function checkStockAndDM() {
           tropicalrain: '🌴🌧️', auroraborealis: '🌌', windy: '💨', tornado: '🌪️',
           summerharvest: '🌻', heatwave: '🔥'
         };
-        weatherText = `**Weather:** ` + activeEvents.map(ev =>
-          `${emojiMap[ev.name] || ''} ${ev.displayName}`
-        ).join(', ');
+        
+        const weatherEmbed = new EmbedBuilder()
+          .setTitle('🌤️ Weather Event Update!')
+          .setColor(0xFFD700)
+          .setDescription(activeEvents.map(ev =>
+            `${emojiMap[ev.name] || '🌟'} **${ev.displayName}** - Active now!`
+          ).join('\n'))
+          .setTimestamp()
+          .setFooter({ text: 'Grow A Garden Weather Alert' });
+          
+        await user.send({ embeds: [weatherEmbed] });
       } else {
-        weatherText = '**Weather:** None active';
+        const weatherEmbed = new EmbedBuilder()
+          .setTitle('🌤️ Weather Clear')
+          .setColor(0x87CEEB)
+          .setDescription('No weather events currently active.')
+          .setTimestamp()
+          .setFooter({ text: 'Grow A Garden Weather Alert' });
+          
+        await user.send({ embeds: [weatherEmbed] });
       }
-    } catch (e) {
-      weatherText = '**Weather:** (unavailable)';
+      
+      // Update last active events
+      lastActiveEvents = currentActiveEvents;
     }
+  } catch (err) {
+    console.error('Error checking weather events:', err);
+  }
+}
+
+async function checkStockAndDM() {
+  try {
+    const res = await fetch('http://localhost:3000/api/stock/GetStock');
+    const data = await res.json();
 
     const now = new Date();
     const minute = now.getMinutes();
@@ -50,19 +151,18 @@ async function checkStockAndDM() {
     // --- Seeds & Gear: every 5 minutes ---
     if (minute % 5 === 0) {
       const user = await client.users.fetch(USER_ID);
-      if (weatherText) await user.send(weatherText);
 
       // Gears
       const gears = (data.gearStock || []).filter(item => item.value > 0);
       if (gears.length > 0) {
-        const embed = formatStockEmbed('Stock Updates - Gears', gears, Date.now());
+        const embed = formatStockEmbed('🔧 Stock Updates - Gears', gears, Date.now());
         await user.send({ embeds: [embed] });
       }
 
       // Seeds
       const seeds = (data.seedsStock || []).filter(item => item.value > 0);
       if (seeds.length > 0) {
-        const embed = formatStockEmbed('Stock Updates - Seeds', seeds, Date.now());
+        const embed = formatStockEmbed('🌱 Stock Updates - Seeds', seeds, Date.now());
         await user.send({ embeds: [embed] });
       }
     }
@@ -70,19 +170,18 @@ async function checkStockAndDM() {
     // --- Egg & Event: every hour ---
     if (minute === 0) {
       const user = await client.users.fetch(USER_ID);
-      if (weatherText) await user.send(weatherText);
 
       // Eggs
       const eggs = (data.eggStock || []).filter(item => item.value > 0);
       if (eggs.length > 0) {
-        const embed = formatStockEmbed('Stock Updates - Eggs', eggs, Date.now());
+        const embed = formatStockEmbed('🥚 Stock Updates - Eggs', eggs, Date.now());
         await user.send({ embeds: [embed] });
       }
 
       // Events
       const events = (data.eventStock || []).filter(item => item.value > 0);
       if (events.length > 0) {
-        const embed = formatStockEmbed('Stock Updates - Events', events, Date.now());
+        const embed = formatStockEmbed('🎉 Stock Updates - Events', events, Date.now());
         await user.send({ embeds: [embed] });
       }
     }
@@ -93,7 +192,8 @@ async function checkStockAndDM() {
 
 client.once('ready', () => {
   console.log(`Discord bot ready as ${client.user.tag}`);
-  setInterval(checkStockAndDM, 60000); // check every 60s
+  setInterval(checkStockAndDM, 60000); // check stock every 60s
+  setInterval(checkWeatherEvents, 30000); // check weather events every 30s for faster detection
 });
 
 client.login(BOT_TOKEN);
