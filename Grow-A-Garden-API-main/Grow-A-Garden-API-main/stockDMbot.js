@@ -218,3 +218,37 @@ client.once('ready', () => {
 });
 
 client.login(BOT_TOKEN);
+
+const readline = require('readline');
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+function promptMessage() {
+  rl.question('Enter a message to send to all users (or type "exit" to quit): ', async (message) => {
+    if (message.toLowerCase() === 'exit') {
+      rl.close();
+      process.exit(0);
+    }
+
+    for (const id of USER_IDS) {
+      try {
+        const user = await client.users.fetch(id);
+        await user.send(message);
+        console.log(`✅ Sent to ${user.username}`);
+      } catch (e) {
+        console.log(`❌ Could not send to ${id}: ${e.message}`);
+      }
+    }
+
+    promptMessage(); // Prompt again
+  });
+}
+
+// Wait until bot is ready before prompting
+client.once('ready', () => {
+  console.log(`Logged in as ${client.user.tag}`);
+  promptMessage(); // Start terminal prompt after ready
+});
