@@ -86,7 +86,7 @@ return emojiMap[itemName] || '📦';
 
 async function checkWeatherEvents() {
 try {
-const weatherRes = await fetch('https://api.joshlee.com/weather');
+const weatherRes = await fetch('https://growagarden.gg/api/weather/stats');
 const weatherData = await weatherRes.json();
     console.log('Weather API Response:', JSON.stringify(weatherData, null, 2));
 const activeEvents = (weatherData.weather || []).filter(ev => ev.active);
