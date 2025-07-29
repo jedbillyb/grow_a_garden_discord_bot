@@ -83,7 +83,6 @@ function getItemEmoji(itemName) {
   const emojiMap = {
     // Target Gears
     'Master Sprinkler': '💧👑',
-    'Godly Sprinkler': '💧✨',
     
     // Target Seeds
     'Giant Pinecone': '🌲🔮',
