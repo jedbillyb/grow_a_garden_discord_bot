@@ -5,7 +5,7 @@ const chalk = require('chalk');
 const fetch = (...args) => import('node-fetch').then(mod => mod.default(...args));
 const readline = require('readline');
 
-const BOT_TOKEN = 'MTM5OTE2NDg3Mjc0MjE0MTk3Mg.Gh4K7-.iqQMmcqgDOToVJc_2XHtdhnRxjYpESy-Qqvnq0';
+const BOT_TOKEN = 'MTM5OTE2NDg3Mjc0MjE0MTk3Mg.GhAS6C.-yuxATnuxTQa4Nggk19Bqm3M9uBM23ERtEq348';
 const USER_IDS = [
   '1162693800590848030',
   '1085337880022483014',
