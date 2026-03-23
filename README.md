@@ -1,4 +1,4 @@
-# Grow a Garden Bot 🌱🤖  
+# Grow a Garden Bot 
 Grow a Garden Roblox Stock Monitor + Discord Alert Bot
 
 Grow a Guardian Bot is a full Node.js stock monitoring system designed for the Roblox game **Grow a Garden**.
